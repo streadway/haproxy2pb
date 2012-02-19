@@ -1,0 +1,193 @@
+package haproxy;
+
+message Request {
+  enum Reason {
+    //  C : the TCP session was unexpectedly aborted by the client.
+    CLIENT_ABORT =1;
+
+    //  S : the TCP session was unexpectedly aborted by the server, or the
+    //      server explicitly refused it.
+    SERVER_ABORT =2;
+
+    //  P : the session was prematurely aborted by the proxy, because of a
+    //      connection limit enforcement, because a DENY filter was matched,
+    //      because of a security check which detected and blocked a dangerous
+    //      error in server response which might have caused information leak
+    //      (eg: cacheable cookie), or because the response was processed by
+    //      the proxy (redirect, stats, etc...).
+    PROXY_ABORT =3;
+
+    //  R : a resource on the proxy has been exhausted (memory, sockets, source
+    //      ports, ...). Usually, this appears during the connection phase, and
+    //      system logs should contain a copy of the precise error. If this
+    //      happens, it must be considered as a very serious anomaly which
+    //      should be fixed as soon as possible by any means.
+    RESOURCE_LIMIT =4;
+
+    //  I : an internal error was identified by the proxy during a self-check.
+    //      This should NEVER happen, and you are encouraged to report any log
+    //      containing this, because this would almost certainly be a bug. It
+    //      would be wise to preventively restart the process after such an
+    //      event too, in case it would be caused by memory corruption.
+    INTERNAL_ERROR =5;
+
+    //  c : the client-side timeout expired while waiting for the client to
+    //      send or receive data.
+    CLIENT_TIMEOUT =6;
+
+    //  s : the server-side timeout expired while waiting for the server to
+    //      send or receive data.
+    SERVER_TIMEOUT =7;
+  }
+
+  enum ProxyState {
+    //  R : the proxy was waiting for a complete, valid REQUEST from the client
+    //      (HTTP mode only). Nothing was sent to any server.
+    REQUEST =1;
+
+    //   Q : the proxy was waiting in the QUEUE for a connection slot. This can
+    //       only happen when servers have a 'maxconn' parameter set. It can
+    //       also happen in the global queue after a redispatch consecutive to
+    //       a failed attempt to connect to a dying server. If no redispatch is
+    //       reported, then no connection attempt was made to any server.
+    QUEUE =2;
+
+    //   C : the proxy was waiting for the CONNECTION to establish on the
+    //       server. The server might at most have noticed a connection attempt.
+    CONNECTION =3;
+
+    //   H : the proxy was waiting for complete, valid response HEADERS from the
+    //       server (HTTP only).
+    HEADERS =4;
+
+    //   D : the session was in the DATA phase.
+    DATA =5;
+
+    //   L : the proxy was still transmitting LAST data to the client while the
+    //       server had already finished. This one is very rare as it can only
+    //       happen when the client dies while receiving the last packets.
+    LAST =6;
+
+    //   T : the request was tarpitted. It has been held open with the client
+    //       during the whole "timeout tarpit" duration or until the client
+    //       closed, both of which will be reported in the "Tw" timer.    
+    TARPIT =7;
+  }
+
+  enum Cookie {
+    //  N : the client provided NO cookie. This is usually the case for new
+    //      visitors, so counting the number of occurrences of this flag in the
+    //      logs generally indicate a valid trend for the site frequentation.
+    NO =1;
+
+    //  I : the client provided an INVALID cookie matching no known server.
+    //      This might be caused by a recent configuration change, mixed
+    //      cookies between HTTP/HTTPS sites, persistence conditionally
+    //      ignored, or an attack.
+    INVALID =2;
+
+    //  D : the client provided a cookie designating a server which was DOWN,
+    //      so either "option persist" was used and the client was sent to
+    //      this server, or it was not set and the client was redispatched to
+    //      another server.
+    DOWN =3;
+
+    //  V : the client provided a VALID cookie, and was sent to the associated
+    //      server.
+    VALID =4;
+
+    //  E : the client provided a valid cookie, but with a last date which was
+    //      older than what is allowed by the "maxidle" cookie parameter, so
+    //      the cookie is consider EXPIRED and is ignored. The request will be
+    //      redispatched just as if there was no cookie.
+    EXPIRED =5;
+
+    //  O : the client provided a valid cookie, but with a first date which was
+    //      older than what is allowed by the "maxlife" cookie parameter, so
+    //      the cookie is consider too OLD and is ignored. The request will be
+    //      redispatched just as if there was no cookie.
+    OLD =6;
+  }
+
+  enum CookieTransform {
+    //  N : NO cookie was provided by the server, and none was inserted either.
+    NONE =1;
+
+    //  I : no cookie was provided by the server, and the proxy INSERTED one.
+    //      Note that in "cookie insert" mode, if the server provides a cookie,
+    //      it will still be overwritten and reported as "I" here.
+    INSERTED =2;
+
+    //  U : the proxy UPDATED the last date in the cookie that was presented by
+    //      the client. This can only happen in insert mode with "maxidle". It
+    //      happens everytime there is activity at a different date than the
+    //      date indicated in the cookie. If any other change happens, such as
+    //      a redispatch, then the cookie will be marked as inserted instead.
+    UPDATED =3;
+
+    //  P : a cookie was PROVIDED by the server and transmitted as-is.
+    PROVIDED =4;
+
+    //  R : the cookie provided by the server was REWRITTEN by the proxy, which
+    //      happens in "cookie rewrite" or "cookie prefix" modes.
+    REWRITTEN =5;
+
+    //  D : the cookie provided by the server was DELETED by the proxy.
+    DELETED =6;
+  }
+
+  required string host =1;
+  required string process =2;
+  required int32 pid =3;
+
+  required bytes client_ip =4;    // 4 or 16 bytes in network order
+  required uint32 client_port =5;
+
+  required uint32 year =6;
+  required uint32 month =7;
+  required uint32 day =8;
+  required uint32 hour =9;
+  required uint32 minute =10;
+  required uint32 second =11;
+  required uint32 nano_second =12;
+
+  required string frontend =13;
+  required string backend =14;
+  required string server =15;
+
+  optional int32 time_queue =16;
+  optional int32 time_wait =17;
+  optional int32 time_connect =18;
+  optional int32 time_respond =19;
+  optional int32 time_total =20;
+
+  optional int32 status_code =21;
+  optional int32 bytes_read =22;
+
+  optional string request_cookie =23;
+  optional string response_cookie =24;
+
+  optional Reason termination_reason =25;
+  optional ProxyState termination_state =26;
+  optional Cookie termination_cookie =27;
+  optional CookieTransform termination_cookie_transform =28;
+
+  optional int32 active_connections =29;
+  optional int32 frontend_connections =30;
+  optional int32 backend_connections =31;
+  optional int32 server_connections =32;
+  optional int32 retries =33;
+
+	optional int32 server_queue =34;
+	optional int32 backend_queue =35;
+
+  repeated string request_headers =36;
+  repeated string response_headers =37;
+
+  optional string http_method =38;
+  optional string http_uri =39;
+  optional string http_version =40;
+
+	extensions 1000 to max;
+}
+
