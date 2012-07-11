@@ -4,7 +4,7 @@ import (
 	"bufio"
 	proto "code.google.com/p/goprotobuf/proto"
 	"fmt"
-	"haproxy"
+	"github.com/streadway/haproxy"
 	"os"
 )
 

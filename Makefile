@@ -1,12 +1,8 @@
-all: haproxy.pb.go scan.go haproxy2pb/main.go
-	go install
-	cd haproxy2pb && go install
+all: haproxy.pb.go
+	cd haproxy2pb && go get -d && go build
 
-test: haproxy.pb.go
-	go install
-	cd haproxy2pb && go install
-	cd ..
-	cat test.log | haproxy2pb
+test: all
+	cat test.log | haproxy2pb/haproxy2pb
 
 %.pb.go:	%.proto
 	protoc --go_out=. $<
