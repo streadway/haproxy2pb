@@ -1,6 +1,7 @@
-# Haproxy protocol buffer format
+# Haproxy protocol buffer format goals
 
-An experiment on finding a benefit of batch encoding Haproxy log lines as protocol buffer messages for:
+An experiment on exploring benefits of batch encoding Haproxy log lines as
+protocol buffer messages for:
 
   * Denser representation
   * Easier parsing
